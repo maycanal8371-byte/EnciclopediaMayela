@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enciclopedia de Lenguajes | Proyecto de Programación Avanzado</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        // CONFIGURACIÓN INICIAL DE TAILWIND CSS
+        tailwind.config = {
+            darkMode: 'class', // Habilitar modo oscuro basado en la clase 'dark' en el <html>
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        // Añadir una fuente de código/hacker para el modo oscuro
+                        mono: ['Consolas', 'Monospace', 'Courier New'],
+                    },
+                    colors: {
+                        // Paleta Normal (Rose/Sky)
+                        'primary': '#f43f5e', 
+                        'secondary': '#0ea5e9', 
+                        'background': '#fef2f2', 
+                        'card': '#ffffff',
+                        'dark-code': '#1f2937', 
+                        // Paleta Modo Hacker (Verde/Negro)
+                        'hacker-bg': '#000000',
+                        'hacker-text': '#00ff00',
+                        'hacker-primary': '#10b981', // Emerald 500
+                        'hacker-secondary': '#34d399', // Emerald 400
+                    },
+                    animation: {
+                        'logo-bounce': 'bounce 1s infinite',
+                        'typing': 'typing 4s steps(30, end), blink-caret .75s step-end infinite',
+                        'blink-caret': 'blink-caret .75s step-end infinite',
+                        // Animación de rotación para la curiosidad
+                        'flip': 'flip 1s ease-in-out',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilos base (aplicados en modo normal) */
+        .code-block {
+            background-color: #1f2937; 
+            color: #e5e7eb; 
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monospace';
+            white-space: pre-wrap;
+            max-height: 300px; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- ESTILOS MODO HACKER (DARK MODE) --- */
+        html.dark {
+            background-color: black;
+        }
+
+        html.dark .code-block {
+            background-color: black;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        html.dark .typing-container {
+            color: #00ff00 !important;
+        }
+
+        /* --- ANIMACIONES EXTRA --- */
+        @keyframes flip {
+            0% { transform: rotateY(0); }
+            50% { transform: rotateY(180deg); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        /* La animación de flip se aplica en JS, pero el estilo 3D aquí */
+        .curiosity-card {
+            perspective: 1000px; /* Necesario para la rotación 3D */
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .curiosity-inner {
+            transform-style: preserve-3d;
+        }
+
+        /* El resto de estilos de la versión anterior para mantener la funcionalidad y diseño */
+        @media (min-width: 768px) {
+            #nav-sidebar {
+                position: sticky;
+                top: 100px; 
+                height: calc(100vh - 140px);
+                overflow-y: auto;
+            }
+        }
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+        }
+        .logo-container:hover {
+            transform: scale(1.05);
+        }
+        #bubbles-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; pointer-events: none; opacity: 0.1;
+        }
+        .bubble {
+            position: absolute; display: block; list-style: none; width: 20px; height: 20px; background: rgba(14, 165, 233, 0.7); animation: animate 25s linear infinite; bottom: -150px; border-radius: 50%;
+        }
+        .bubble:nth-child(even) { background: rgba(244, 63, 94, 0.7); }
+        @keyframes animate {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 0; }
+            100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
+        }
+        .typing-effect {
+            width: 30ch; overflow: hidden; white-space: nowrap; border-right: 0.1em solid white; animation: typing 4s steps(30, end) infinite alternate, blink-caret .75s step-end infinite; 
+        }
+        @keyframes typing { from { width: 0 } to { width: 30ch } }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: white } }
+        .typing-container {
+            display: inline-block; font-family: 'Consolas', 'Monospace', 'Inter', sans-serif; color: #ffffff;
+        }
+        .answer-area {
+            width: 100%; height: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; font-size: 1rem; resize: vertical; transition: border-color 0.3s; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .answer-area:focus {
+            outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.3);
+        }
+        .image-container-clickable {
+            min-height: 15rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.3s;
+        }
+        .image-container-clickable:hover {
+            background-color: #fce7f3;
+        }
+        .lang-image {
+            transition: transform 0.3s;
+        }
+        .image-container-clickable:hover .lang-image {
+            transform: scale(1.05);
+        }
+        .header-logo-wrapper {
+            display: flex; align-items: center; gap: 1.5rem;
+        }
+    </style>
+</head>
+<body class="font-sans bg-background min-h-screen flex flex-col relative transition-colors duration-500">
+
+    <div id="bubbles-container"></div>
+    
+    <header class="bg-primary shadow-2xl p-4 md:p-6 text-white sticky top-0 z-20 transition-colors duration-500 dark:bg-hacker-primary dark:shadow-hacker-secondary">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+            
+            <div class="header-logo-wrapper order-2 md:order-1">
+                <label for="logo-upload" id="school-logo-label" class="logo-container">
+                    <img id="school-logo" 
+                        src="https://placehold.co/80x80/f43f5e/ffffff?text=LOGO" 
+                        alt="Logo de la Escuela" 
+                        class="w-20 h-20 rounded-full object-cover shadow-lg border-4 border-white transition duration-300 ring-2 ring-white/50 hover:ring-secondary animate-logo-bounce dark:border-hacker-text dark:ring-hacker-text/50">
+                    <input type="file" id="logo-upload" accept="image/*" class="hidden">
+                </label>
+
+                <label for="extra-logo-upload" class="logo-container">
+                    <img id="extra-logo-image" 
+                        src="https://placehold.co/80x80/0ea5e9/ffffff?text=Tu+Logo" 
+                        alt="Logo Adicional" 
+                        class="w-20 h-20 rounded-full object-cover shadow-lg border-4 border-white transition duration-300 ring-2 ring-white/50 hover:ring-primary animate-logo-bounce dark:border-hacker-text dark:ring-hacker-text/50">
+                    <input type="file" id="extra-logo-upload" accept="image/*" class="hidden">
+                </label>
+            </div>
+
+            <div class="flex items-center space-x-4 order-1 md:order-2">
+                <h1 class="text-2xl md:text-4xl font-black tracking-tighter">
+                    <span class="typing-container typing-effect">
+                        ENCICLOPEDIA DE LENGUAJES
+                    </span>
+                </h1>
+            </div>
+            
+            <div class="flex items-center space-x-4 order-3">
+                <button id="show-team" class="bg-secondary hover:bg-sky-600 px-6 py-3 rounded-full font-bold text-sm uppercase transition duration-300 shadow-xl transform hover:scale-105 ring-2 ring-white/50 dark:bg-hacker-secondary dark:hover:bg-hacker-secondary/80 dark:text-hacker-bg">
+                    Ver Equipo
+                </button>
+                <button id="toggle-hacker-mode" class="bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-full font-bold text-sm uppercase transition duration-300 shadow-xl transform hover:scale-105 text-white dark:bg-hacker-text dark:text-hacker-bg">
+                    <span class="normal-text">Hacker OFF</span>
+                    <span class="hacker-text hidden">Hacker ON</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex flex-1 container mx-auto p-4 md:p-8 pt-6 relative z-10"> 
+        
+        <nav id="nav-sidebar" class="w-full md:w-72 flex-shrink-0 md:mr-8 mb-6 md:mb-0 bg-card rounded-2xl shadow-2xl p-5 transition-all duration-300 border border-gray-100 dark:bg-hacker-bg dark:border-hacker-text dark:shadow-hacker-secondary/50">
+            <h2 class="text-xl font-bold text-primary mb-4 border-b-2 border-primary/20 pb-2 dark:text-hacker-text dark:border-hacker-secondary">
+                <span class="inline-block mr-2">📚</span> Explorador de Fichas
+            </h2>
+            <div id="language-list" class="space-y-2">
+            </div>
+
+            <div class="mt-8 pt-4 border-t border-gray-200 dark:border-hacker-secondary/50">
+                <h3 class="text-sm font-semibold text-gray-600 mb-2 uppercase dark:text-hacker-text">Progreso de Estudio</h3>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-hacker-secondary/20">
+                    <div id="knowledge-progress" class="bg-secondary h-2.5 rounded-full transition-all duration-700 ease-out dark:bg-hacker-secondary" style="width: 0%"></div>
+                </div>
+                <p id="progress-text" class="text-xs text-gray-500 mt-1 dark:text-hacker-text/70">0/11 Lenguajes explorados.</p>
+            </div>
+
+            <div id="curiosity-card" class="curiosity-card mt-8 p-4 bg-primary/10 rounded-xl shadow-lg border-l-4 border-primary dark:bg-hacker-secondary/10 dark:border-hacker-secondary">
+                <div class="curiosity-inner">
+                    <h3 class="text-lg font-bold text-primary mb-2 dark:text-hacker-text">🧐 Curiosidad del Día</h3>
+                    <p id="curiosity-text" class="text-sm text-gray-700 dark:text-hacker-text/80">Cargando dato interesante...</p>
+                </div>
+            </div>
+
+        </nav>
+
+        <section id="content-panel" class="flex-1 bg-card rounded-2xl shadow-2xl p-6 md:p-10 transition-opacity duration-300 border border-gray-100 dark:bg-hacker-bg dark:border-hacker-text dark:shadow-hacker-secondary/50">
+            </section>
+    </main>
+    
+    <section id="faq-section" class="container mx-auto p-4 md:p-8 relative z-10 bg-white/70 rounded-t-xl shadow-inner mt-8 dark:bg-hacker-bg/90 dark:shadow-hacker-text">
+        <h2 class="text-3xl font-black text-secondary mb-6 border-b-2 border-primary/50 pb-2 text-center dark:text-hacker-secondary dark:border-hacker-text">
+            🗣️ Preguntas para el Equipo (¡A Responder!)
+        </h2>
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="p-4 bg-secondary/10 rounded-lg border-l-4 border-secondary shadow-md dark:bg-hacker-secondary/20 dark:border-hacker-secondary">
+                <p class="font-bold text-gray-800 mb-1 dark:text-hacker-text">1. ¿Qué Lenguaje elegirían para desarrollar un **videojuego** de alto rendimiento y por qué?</p>
+                <textarea id="q1-answer" class="answer-area dark:bg-gray-900 dark:text-hacker-text dark:border-hacker-text" placeholder="Escribe aquí tu respuesta. Ejemplo: Elegiría C++ porque..."></textarea>
+            </div>
+            <div class="p-4 bg-primary/10 rounded-lg border-l-4 border-primary shadow-md dark:bg-hacker-primary/20 dark:border-hacker-primary">
+                <p class="font-bold text-gray-800 mb-1 dark:text-hacker-text">2. Si tuvieran que crear una página web con diseño animado y bases de datos, ¿qué tres tecnologías usarían y cómo interactuarían?</p>
+                <textarea id="q2-answer" class="answer-area dark:bg-gray-900 dark:text-hacker-text dark:border-hacker-text" placeholder="Escribe aquí tu respuesta. Ejemplo: Usaría 1. HTML para..., 2. CSS para..., 3. JavaScript para..."></textarea>
+            </div>
+            <div class="p-4 bg-gray-200 rounded-lg border-l-4 border-gray-500 shadow-md dark:bg-gray-800 dark:border-hacker-text">
+                <p class="font-bold text-gray-800 mb-1 dark:text-hacker-text">3. Explica la importancia de la **"Portabilidad"** en la programación, usando como ejemplo uno de los lenguajes híbridos.</p>
+                <textarea id="q3-answer" class="answer-area dark:bg-gray-900 dark:text-hacker-text dark:border-hacker-text" placeholder="Escribe aquí tu respuesta. Ejemplo: La portabilidad es importante porque... El mejor ejemplo es Java, que..."></textarea>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-gray-900 text-gray-300 p-4 text-center text-sm mt-auto shadow-inner relative z-10 dark:bg-hacker-bg dark:text-hacker-text/80">
+        <p>© 2025 Proyecto de Programación Avanzado - Estudiante 5to Semestre Prepa. 
+            <span id="easter-egg-reveal" class="text-primary cursor-pointer hover:underline dark:text-hacker-secondary">¡Haz clic en el logo principal 3 veces!</span>
+        </p>
+    </footer>
+
+    <script>
+        // --- 1. DATOS Y BASE DE CONOCIMIENTO ---
+        const LANGUAGES_DATA = [
+            { id: 'inicio', name: '🏠 Página de Inicio', type: 'Introducción', feature: 'Explora 11 lenguajes clave', usage: 'Plataforma interactiva para el proyecto de programación.', long_description: '', code: ''},
+            { id: 'swift', name: 'Swift', type: 'Alto nivel, Compilado', feature: 'Seguridad en el ecosistema de Apple. Famoso por su sintaxis concisa.', usage: 'Desarrollo Móvil (iOS, macOS).', long_description: 'Creado por Apple, Swift ha reemplazado a Objective-C. Su diseño prioriza la seguridad, rendimiento y una sintaxis fácil de leer y escribir.', code: `let mensaje = "Hola Mundo en Swift!"\nprint(mensaje)`},
+            { id: 'ruby', name: 'Ruby', type: 'Alto nivel, Interpretado', feature: 'Lenguaje elegante y enfocado en la productividad del desarrollador (Ruby on Rails).', usage: 'Desarrollo Web (Backend), Prototipado rápido.', long_description: 'Ruby es conocido por su filosofía de que el código debe ser bello. El famoso framework Ruby on Rails lo convirtió en un estándar para el desarrollo ágil de aplicaciones web.', code: `puts "Hola Mundo en Ruby!"`},
+            { id: 'python', name: 'Python', type: 'Alto nivel, Interpretado', feature: 'Sintaxis simple que favorece la automatización, Machine Learning y Data Science.', usage: 'Ciencia de Datos, Inteligencia Artificial, Desarrollo Web.', long_description: 'Python es posiblemente el lenguaje más popular por su versatilidad. Su sintaxis simple lo hace ideal para principiantes y para aplicaciones complejas en Machine Learning.', code: `def saludar():\n    print("Hola Mundo en Python")\nsaludar()`},
+            { id: 'java', name: 'Java', type: 'Alto nivel, Híbrido', feature: 'Portabilidad ("Escribe una vez, ejecuta en cualquier lugar") y robustez (JVM).', usage: 'Aplicaciones Empresariales, Desarrollo Android, Big Data.', long_description: 'Java se ejecuta en una Máquina Virtual de Java (JVM), lo que le permite ser altamente portátil. Es el pilar de muchas aplicaciones empresariales.', code: `public static void main(String[] args) {\n    System.out.println("Hola Mundo en Java!");\n}`},
+            { id: 'javascript', name: 'JavaScript', type: 'Alto nivel, Interpretado', feature: 'El único lenguaje que domina el frontend y el backend (con Node.js).', usage: 'Desarrollo Web (Frontend y Backend), Aplicaciones Móviles.', long_description: 'Originalmente para navegadores, con Node.js se expandió al servidor. Es la base de frameworks modernos como React y Angular.', code: `document.getElementById('saludo').textContent = "Hola Mundo en JS!";\nconsole.log("Hola Mundo!");`},
+            { id: 'php', name: 'PHP', type: 'Alto nivel, Interpretado', feature: 'Diseñado para el desarrollo web en el lado del servidor. Impulsa WordPress.', usage: 'Desarrollo Web (Backend), Mantenimiento de sitios grandes.', long_description: 'PHP impulsa el 75% de la web a través de sistemas como WordPress. Las versiones modernas son rápidas y robustas.', code: `<?php\necho "Hola Mundo en PHP!";\n?>`},
+            { id: 'html', name: 'HTML', type: 'Lenguaje de Marcado', feature: 'Define la estructura y el contenido semántico de las páginas web (el "esqueleto").', usage: 'Estructura base de **toda** página web.', long_description: 'HTML es el bloque de construcción fundamental de la Web. Utiliza etiquetas para definir la estructura de la página.', code: `<!DOCTYPE html>\n<html>\n    <body>\n        <h1>Título principal</h1>\n    </body>\n</html>`},
+            { id: 'css', name: 'CSS', type: 'Hojas de Estilo', feature: 'Controla el diseño, la presentación visual, colores, fuentes y la disposición (el "aspecto").', usage: 'Diseño y estilo de **toda** página web.', long_description: 'CSS es crucial para la estética de una web. Le dice al navegador cómo deben presentarse los elementos HTML.', code: `body {\n    font-family: sans-serif;\n    background-color: #f0f0f0;\n}\n.titulo {\n    color: #f43f5e;\n}`},
+            { id: 'c', name: 'C', type: 'Nivel Medio, Compilado', feature: 'Lenguaje fundacional, eficiencia y acceso de bajo nivel a la memoria (punteros).', usage: 'Sistemas Operativos, *Firmware*, Controladores de Dispositivos.', long_description: 'C es uno de los lenguajes más influyentes. Su capacidad para interactuar con el hardware lo hace indispensable para la programación de sistemas.', code: `#include <stdio.h>\nint main() {\n    printf("Hola Mundo en C!\\n");\n    return 0;\n}`},
+            { id: 'c++', name: 'C++', type: 'Nivel Medio/Alto, Compilado', feature: 'Extensión de C con POO y alto rendimiento. Estándar para motores de juegos.', usage: 'Videojuegos (Motores Gráficos), Sistemas de Alto Rendimiento.', long_description: 'C++ añade POO a C. Es el estándar para cualquier aplicación que requiera una gestión de memoria eficiente y un rendimiento máximo (Unreal Engine).', code: `#include <iostream>\nint main() {\n    std::cout << "Hola Mundo en C++" << std::endl;\n    return 0;\n}`},
+            { id: 'csharp', name: 'C# (C-Sharp)', type: 'Alto nivel, Híbrido', feature: 'Lenguaje de Microsoft, fuertemente orientado a objetos, ideal para .NET y Unity.', usage: 'Aplicaciones Empresariales, Desarrollo de Juegos (Unity), Aplicaciones de Escritorio.', long_description: 'C# es el principal lenguaje de Microsoft (.NET). Es popular para desarrollo de juegos con el motor Unity.', code: `using System;\npublic class Program {\n    public static void Main() {\n        Console.WriteLine("Hola Mundo en C#!");\n    }\n}`},
+        ];
+
+        // Curiosidades sobre los lenguajes (para la tarjeta rotatoria)
+        const CURIOSITIES = [
+            "Java se llamó originalmente **Oak** (Roble) por un árbol que el creador veía desde su oficina.",
+            "El creador de **Python**, Guido van Rossum, lo nombró por el grupo de comedia 'Monty Python'.",
+            "**JavaScript** fue creado en 10 días y originalmente se llamó Mocha.",
+            "**C** es tan eficiente que la mayoría de los sistemas operativos modernos, como Linux y Windows, están escritos en gran parte con él.",
+            "**HTML** no es un lenguaje de programación. Es un lenguaje de marcado. ¡Dato crucial!",
+            "El nombre oficial de C# es 'C Sharp', derivado de la notación musical que indica un tono un semitono más alto.",
+        ];
+
+        // --- 2. PERSISTENCIA Y ESTADO ---
+        const totalLanguages = LANGUAGES_DATA.length - 1; // Excluir 'inicio'
+        const LANGUAGE_IMAGES = JSON.parse(localStorage.getItem('languageImages')) || LANGUAGES_DATA.reduce((acc, lang) => {
+            if (lang.id !== 'inicio') { acc[lang.id] = `https://placehold.co/300x200/${lang.id.startsWith('c') ? '0ea5e9' : 'f43f5e'}/ffffff?text=Imagen+${lang.name}`; } return acc;
+        }, {});
+        const ANSWER_DATA = JSON.parse(localStorage.getItem('projectAnswers')) || { 'q1-answer': '', 'q2-answer': '', 'q3-answer': '' };
+        // Nuevo: Rastrea los lenguajes visitados para el progreso
+        const VISITED_LANGUAGES = new Set(JSON.parse(localStorage.getItem('visitedLanguages')) || []);
+
+        function saveLanguageImages() { localStorage.setItem('languageImages', JSON.stringify(LANGUAGE_IMAGES)); }
+        function saveAnswers() {
+            document.querySelectorAll('.answer-area').forEach(textarea => { ANSWER_DATA[textarea.id] = textarea.value; });
+            localStorage.setItem('projectAnswers', JSON.stringify(ANSWER_DATA));
+        }
+        function saveVisitedLanguages() { localStorage.setItem('visitedLanguages', JSON.stringify(Array.from(VISITED_LANGUAGES))); }
+
+        // --- 3. ELEMENTOS DEL DOM ---
+        const languageList = document.getElementById('language-list');
+        const contentPanel = document.getElementById('content-panel');
+        const showTeamButton = document.getElementById('show-team');
+        const schoolLogoLabel = document.getElementById('school-logo-label');
+        const schoolLogo = document.getElementById('school-logo');
+        const bubblesContainer = document.getElementById('bubbles-container');
+        const toggleHackerMode = document.getElementById('toggle-hacker-mode');
+        const knowledgeProgress = document.getElementById('knowledge-progress');
+        const progressText = document.getElementById('progress-text');
+        const curiosityCard = document.getElementById('curiosity-card');
+        const curiosityText = document.getElementById('curiosity-text');
+
+        // --- 4. FUNCIONES EXTRA COOL ---
+
+        /**
+         * Actualiza la barra de progreso y el texto de estudio.
+         */
+        function updateKnowledgeProgress(langId) {
+            if (langId !== 'inicio') {
+                VISITED_LANGUAGES.add(langId);
+                saveVisitedLanguages();
+            }
+
+            const currentVisited = VISITED_LANGUAGES.size;
+            const percentage = (currentVisited / totalLanguages) * 100;
+            
+            knowledgeProgress.style.width = `${percentage.toFixed(0)}%`;
+            progressText.textContent = `${currentVisited}/${totalLanguages} Lenguajes explorados. ¡Tu maestro está orgulloso!`;
+        }
+        
+        /**
+         * Función del Easter Egg: Triple Clic.
+         */
+        function initializeEasterEgg() {
+            let clickCount = 0;
+            let timer = null;
+            
+            schoolLogoLabel.addEventListener('click', () => {
+                clickCount++;
+                clearTimeout(timer);
+                
+                timer = setTimeout(() => {
+                    if (clickCount >= 3) {
+                        alert("¡FELICIDADES! Has encontrado el easter egg. Tu código ha sido aprobado por el Consejo Supremo de la Programación. ¡Sigue así!");
+                    }
+                    clickCount = 0;
+                }, 400); // 400ms para contar 3 clics rápidos
+            });
+        }
+
+        /**
+         * Inicializa el modo Hacker (Alto Contraste)
+         */
+        function initializeHackerMode() {
+            const isHackerMode = localStorage.getItem('hackerMode') === 'true';
+            
+            const activateMode = (state) => {
+                document.documentElement.classList.toggle('dark', state);
+                toggleHackerMode.querySelector('.normal-text').classList.toggle('hidden', state);
+                toggleHackerMode.querySelector('.hacker-text').classList.toggle('hidden', !state);
+                localStorage.setItem('hackerMode', state);
+            };
+
+            // Aplicar estado guardado
+            activateMode(isHackerMode);
+
+            // Listener para el botón
+            toggleHackerMode.addEventListener('click', () => {
+                const newState = !document.documentElement.classList.contains('dark');
+                activateMode(newState);
+            });
+        }
+
+        /**
+         * Muestra una curiosidad aleatoria con animación.
+         */
+        function showRandomCuriosity() {
+            // Asegura que el texto nuevo no sea el mismo que el anterior (si es posible)
+            let newCuriosity;
+            do {
+                const randomIndex = Math.floor(Math.random() * CURIOSITIES.length);
+                newCuriosity = CURIOSITIES[randomIndex];
+            } while (newCuriosity === curiosityText.textContent && CURIOSITIES.length > 1);
+
+            // Aplica animación de flip
+            curiosityCard.classList.remove('animate-flip');
+            void curiosityCard.offsetWidth; // Truco para forzar el reinicio de la animación
+            curiosityCard.classList.add('animate-flip');
+
+            // Cambia el texto después de que inicia la rotación
+            setTimeout(() => {
+                curiosityText.textContent = newCuriosity;
+            }, 500); // Cambia el texto en el punto medio de la animación (1s total)
+        }
+
+        // --- 5. FUNCIONES DE RENDERIZADO (Mejoradas) ---
+
+        /**
+         * Función principal para mostrar el detalle de un lenguaje.
+         */
+        function displayLanguage(langId) {
+            const lang = LANGUAGES_DATA.find(l => l.id === langId);
+            if (lang) {
+                // 1. Efecto de Fade Out
+                contentPanel.classList.remove('opacity-100');
+                contentPanel.classList.add('opacity-0');
+
+                // 2. Esperar 300ms, cambiar el contenido, y hacer Fade In
+                setTimeout(() => {
+                    contentPanel.innerHTML = renderLanguageDetail(lang);
+                    if (lang.id !== 'inicio') {
+                        addLanguageImageListener(lang.id);
+                    }
+                    contentPanel.classList.remove('opacity-0');
+                    contentPanel.classList.add('opacity-100');
+                }, 300);
+                
+                // 3. Actualizar estado de navegación
+                setActiveButton(langId);
+                updateKnowledgeProgress(langId);
+                
+                // 4. Mostrar una curiosidad aleatoria
+                if (langId !== 'inicio') {
+                     showRandomCuriosity();
+                }
+            }
+        }
+        
+        // El resto de funciones de renderizado, inicialización y persistencia se mantienen de la versión anterior para no redundar el código, 
+        // pero se le añaden los "dark:..." necesarios para el modo hacker.
+
+        function renderLanguageDetail(lang) {
+             if (lang.id === 'inicio') {
+                return renderWelcomePageContent();
+            }
+
+            const currentImage = LANGUAGE_IMAGES[lang.id];
+
+            return `
+                <h2 class="text-4xl lg:text-5xl font-extrabold text-primary mb-8 border-b-4 border-secondary/50 pb-4 tracking-tight dark:text-hacker-secondary dark:border-hacker-primary">${lang.name}</h2>
+                
+                <div class="grid md:grid-cols-3 gap-6 lg:gap-8 mb-8">
+                    <div id="image-container-${lang.id}" class="md:col-span-1 flex flex-col items-center p-4 bg-gray-50 rounded-xl shadow-inner image-container-clickable dark:bg-hacker-secondary/10 dark:shadow-hacker-text">
+                        <img id="lang-image-${lang.id}"
+                             src="${currentImage}" 
+                             alt="Logo o Diagrama de ${lang.name}" 
+                             class="w-full h-auto object-contain rounded-lg shadow-md border-2 border-primary/50 max-h-48 lang-image dark:border-hacker-text"
+                        >
+                        <input type="file" id="image-upload-${lang.id}" accept="image/*" class="hidden">
+                    </div>
+
+                    <div class="md:col-span-2 space-y-4">
+                        <div class="bg-primary/5 p-5 rounded-xl shadow-md border-l-4 border-primary dark:bg-hacker-primary/10 dark:border-hacker-primary">
+                            <h3 class="text-lg font-bold text-primary mb-1 uppercase tracking-wider dark:text-hacker-secondary">Tipo</h3>
+                            <p class="text-gray-800 text-xl font-semibold dark:text-hacker-text">${lang.type}</p>
+                        </div>
+                        <div class="bg-primary/5 p-5 rounded-xl shadow-md border-l-4 border-primary dark:bg-hacker-primary/10 dark:border-hacker-primary">
+                            <h3 class="text-lg font-bold text-primary mb-1 uppercase tracking-wider dark:text-hacker-secondary">Uso Común</h3>
+                            <p class="text-gray-800 text-xl font-semibold dark:text-hacker-text">${lang.usage}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="md:col-span-3 bg-secondary/10 p-5 rounded-xl shadow-lg border-t-4 border-secondary dark:bg-hacker-secondary/10 dark:border-hacker-secondary">
+                        <h3 class="text-xl font-bold text-secondary mb-2 dark:text-hacker-text">✨ Característica Principal</h3>
+                        <p class="text-gray-700 text-lg dark:text-hacker-text/80">${lang.feature}</p>
+                    </div>
+                </div>
+
+                ${lang.long_description ? `
+                    <div class="mt-8 mb-10 p-5 border-l-4 border-primary/50 bg-gray-50 rounded-lg shadow-md dark:bg-gray-900 dark:border-hacker-secondary">
+                        <h3 class="text-2xl font-bold text-primary mb-3 dark:text-hacker-secondary">Información Detallada</h3>
+                        <p class="text-gray-700 leading-relaxed dark:text-hacker-text/90">${lang.long_description}</p>
+                    </div>
+                ` : ''}
+
+                <div class="mt-10">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2 dark:text-hacker-text dark:border-hacker-secondary">Ejemplo Simple de Código: <span class="text-secondary dark:text-hacker-secondary">${lang.name}</span></h3>
+                    <pre class="code-block">${lang.code}</pre>
+                </div>
+            `;
+        }
+        
+        function renderWelcomePageContent() {
+             return `
+                 <h2 class="text-4xl lg:text-5xl font-black text-primary mb-4 tracking-tight dark:text-hacker-secondary">¡Bienvenida/o al Proyecto!</h2>
+                 <p class="text-xl text-gray-700 mb-8 max-w-3xl dark:text-hacker-text/90">
+                     Esta es la **Enciclopedia Interactiva** de 5to semestre, diseñada para impresionar con **interactividad avanzada** y **diseño moderno**.
+                 </p>
+
+                 <div class="grid md:grid-cols-3 gap-6 mb-10">
+                    <div class="bg-card p-6 rounded-xl shadow-xl border-t-4 border-secondary hover:shadow-2xl transition duration-300 dark:bg-gray-900 dark:border-hacker-secondary">
+                         <p class="text-4xl font-extrabold text-secondary mb-2 dark:text-hacker-text">${totalLanguages}</p>
+                         <h3 class="text-lg font-bold text-gray-800 dark:text-hacker-secondary">Fichas Detalladas</h3>
+                         <p class="text-sm text-gray-500 dark:text-hacker-text/70">Listas para explorar en el panel izquierdo.</p>
+                    </div>
+                    <div class="bg-card p-6 rounded-xl shadow-xl border-t-4 border-primary hover:shadow-2xl transition duration-300 dark:bg-gray-900 dark:border-hacker-primary">
+                         <p class="text-4xl font-extrabold text-primary mb-2 dark:text-hacker-text">Funcionalidad Extra</p>
+                         <h3 class="text-lg font-bold text-gray-800 dark:text-hacker-secondary">Modo Hacker</h3>
+                         <p class="text-sm text-gray-500 dark:text-hacker-text/70">¡Presiona el botón 'Hacker OFF' para activar el tema de terminal!</p>
+                    </div>
+                    <div class="bg-card p-6 rounded-xl shadow-xl border-t-4 border-gray-500 hover:shadow-2xl transition duration-300 dark:bg-gray-900 dark:border-hacker-text">
+                         <p class="text-4xl font-extrabold text-gray-500 mb-2 dark:text-hacker-text">Persistencia</p>
+                         <h3 class="text-lg font-bold text-gray-800 dark:text-hacker-secondary">Guardado Automático</h3>
+                         <p class="text-sm text-gray-500 dark:text-hacker-text/70">Respuestas y logos se guardan en el navegador. ¡No se pierde el trabajo!</p>
+                    </div>
+                 </div>
+
+                 <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-inner dark:bg-gray-900 dark:border-hacker-secondary">
+                     <h3 class="text-2xl font-bold text-gray-800 mb-3 flex items-center dark:text-hacker-secondary">
+                         <span class="text-primary text-3xl mr-2 dark:text-hacker-text">💡</span> Interacciones Clave
+                     </h3>
+                     <ol class="list-decimal list-inside text-gray-700 space-y-3 ml-4 dark:text-hacker-text/90">
+                         <li>**Carga de Logos:** Haz clic en cualquiera de los logos circulares del encabezado.</li>
+                         <li>**Imágenes de Lenguajes:** Haz clic directamente sobre la imagen de la ficha (Ej: Python) para cambiarla.</li>
+                         <li>**Barra de Progreso:** La barra lateral registra cuántos lenguajes has visto.</li>
+                         <li>**Easter Egg:** Intenta dar triple clic rápido al logo principal de la escuela... ¡sorpresa!</li>
+                     </ol>
+                 </div>
+             `;
+        }
+
+        // --- 6. INICIALIZACIÓN Y EVENTOS ---
+
+        function initializeNavigation() {
+            languageList.innerHTML = '';
+            LANGUAGES_DATA.forEach(lang => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left p-3 rounded-lg font-medium text-gray-700 hover:bg-pink-100 transition duration-300 transform hover:scale-[1.01] dark:text-hacker-text dark:hover:bg-hacker-secondary/10';
+                button.textContent = lang.name;
+                button.dataset.langId = lang.id;
+                
+                button.addEventListener('click', () => {
+                    displayLanguage(lang.id);
+                });
+
+                languageList.appendChild(button);
+            });
+        }
+        function setActiveButton(activeId) {
+            document.querySelectorAll('#language-list button').forEach(btn => {
+                if (btn.dataset.langId === activeId) {
+                    btn.classList.remove('text-gray-700', 'hover:bg-pink-100', 'dark:text-hacker-text', 'dark:hover:bg-hacker-secondary/10');
+                    btn.classList.add('bg-primary', 'text-white', 'shadow-lg', 'dark:bg-hacker-secondary', 'dark:text-hacker-bg', 'dark:shadow-hacker-secondary');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white', 'shadow-lg', 'dark:bg-hacker-secondary', 'dark:text-hacker-bg', 'dark:shadow-hacker-secondary');
+                    btn.classList.add('text-gray-700', 'hover:bg-pink-100', 'dark:text-hacker-text', 'dark:hover:bg-hacker-secondary/10');
+                }
+            });
+        }
+        function loadAnswers() {
+             document.querySelectorAll('.answer-area').forEach(textarea => {
+                if (ANSWER_DATA[textarea.id] !== undefined) { textarea.value = ANSWER_DATA[textarea.id]; }
+                textarea.addEventListener('input', saveAnswers);
+            });
+        }
+        function initializeLogoUpload() {
+            const savedLogo = localStorage.getItem('projectLogo');
+            if (savedLogo) { schoolLogo.src = savedLogo; }
+            document.getElementById('logo-upload').addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) { schoolLogo.src = e.target.result; localStorage.setItem('projectLogo', e.target.result); };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        function initializeExtraLogoUpload() {
+             const savedExtraLogo = localStorage.getItem('extraProjectLogo');
+            if (savedExtraLogo) { document.getElementById('extra-logo-image').src = savedExtraLogo; }
+            document.getElementById('extra-logo-upload').addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) { document.getElementById('extra-logo-image').src = e.target.result; localStorage.setItem('extraProjectLogo', e.target.result); };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        function addLanguageImageListener(langId) {
+            const imageContainer = document.getElementById(`image-container-${langId}`);
+            const imageUpload = document.getElementById(`image-upload-${langId}`);
+            const langImage = document.getElementById(`lang-image-${langId}`);
+
+            if (imageContainer && imageUpload && langImage) {
+                imageContainer.addEventListener('click', function() { imageUpload.click(); });
+                imageUpload.addEventListener('change', function() {
+                    const file = this.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) { langImage.src = e.target.result; LANGUAGE_IMAGES[langId] = e.target.result; saveLanguageImages(); };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        }
+        function createBubbles() {
+            const numBubbles = 15;
+            for (let i = 0; i < numBubbles; i++) {
+                const bubble = document.createElement('li');
+                bubble.classList.add('bubble');
+                const size = Math.random() * (120 - 40) + 40;
+                const left = Math.random() * 100;
+                const duration = Math.random() * (30 - 15) + 15;
+                const delay = Math.random() * -duration;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${left}%`;
+                bubble.style.animationDuration = `${duration}s`;
+                bubble.style.animationDelay = `${delay}s`;
+                bubble.style.opacity = Math.random() * (0.8 - 0.5) + 0.5;
+                bubblesContainer.appendChild(bubble);
+            }
+        }
+        function renderTeamPage() {
+            contentPanel.classList.remove('opacity-100');
+            contentPanel.classList.add('opacity-0');
+            setTimeout(() => {
+                // Contenido del equipo (mismo de la versión anterior para mantener el enfoque)
+                contentPanel.innerHTML = `<h2 class="text-4xl lg:text-5xl font-black text-primary mb-8 tracking-tight border-b pb-4 dark:text-hacker-secondary dark:border-hacker-text">Página de Presentación del Equipo</h2><div class="bg-primary/5 p-6 rounded-xl shadow-lg border-l-4 border-primary mb-8 dark:bg-hacker-primary/10 dark:border-hacker-primary"><h3 class="text-2xl font-bold text-gray-800 mb-2 dark:text-hacker-secondary">Nuestra Misión</h3><p class="text-gray-700 text-lg dark:text-hacker-text/90">Sintetizar la información de los lenguajes de programación más importantes en un formato visual, moderno y fácil de digerir.</p></div><h3 class="text-3xl font-bold text-secondary mb-6 border-b-2 border-secondary/50 pb-2 dark:text-hacker-secondary dark:border-hacker-text">Miembros Clave</h3><div class="grid md:grid-cols-3 gap-6"><div class="bg-card p-6 rounded-xl shadow-xl border-t-4 border-primary hover:shadow-2xl transition duration-300 dark:bg-gray-900 dark:border-hacker-primary"><p class="text-xl font-extrabold text-primary mb-2 dark:text-hacker-text">MAYELA CANALES</p><p class="text-sm font-semibold text-gray-600 mb-3 dark:text-hacker-secondary">Programadora / Diseñadora</p><p class="text-gray-700 italic border-l-2 pl-3 dark:text-hacker-text/90">"Generó toda la estructura del proyecto y la funcionalidad interactiva (HTML/CSS/JS)."</p></div><div class="bg-card p-6 rounded-xl shadow-xl border-t-4 border-secondary hover:shadow-2xl transition duration-300 dark:bg-gray-900 dark:border-hacker-secondary"><p class="text-xl font-extrabold text-primary mb-2 dark:text-hacker-text">JOANNE GORGONIO</p><p class="text-sm font-semibold text-gray-600 mb-3 dark:text-hacker-secondary">Investigadora de Contenido</p><p class="text-gray-700 italic border-l-2 pl-3 dark:text-hacker-text/90">"Investigó y recopiló información clave sobre varios lenguajes de programación."</p></div><div class="bg-card p-6 rounded-xl shadow-xl border-t-4 border-gray-500 hover:shadow-2xl transition duration-300 dark:bg-gray-900 dark:border-hacker-text"><p class="text-xl font-extrabold text-primary mb-2 dark:text-hacker-text">IGNACIO MEZA</p><p class="text-sm font-semibold text-gray-600 mb-3 dark:text-hacker-secondary">Colaborador Conceptual</p><p class="text-gray-700 italic border-l-2 pl-3 dark:text-hacker-text/90">"Ayudó a definir la idea central de la enciclopedia y su esquema de navegación."</p></div></div>`;
+                contentPanel.classList.remove('opacity-0');
+                contentPanel.classList.add('opacity-100');
+            }, 300);
+            setActiveButton(null); 
+        }
+
+        // --- FINAL INICIALIZACIÓN ---
+        initializeNavigation();
+        initializeLogoUpload();
+        initializeExtraLogoUpload();
+        createBubbles();
+        initializeEasterEgg(); // Nuevo
+        initializeHackerMode(); // Nuevo
+
+        window.onload = function() {
+            displayLanguage('inicio');
+            contentPanel.classList.add('opacity-100'); 
+            loadAnswers();
+            updateKnowledgeProgress('inicio'); // Inicializa el progreso
+            showRandomCuriosity(); // Muestra la primera curiosidad
+            // Configura el timer para que rote la curiosidad cada 15 segundos
+            setInterval(showRandomCuriosity, 15000); 
+        };
+        showTeamButton.addEventListener('click', renderTeamPage);
+
+    </script>
+</body>
+</html>
